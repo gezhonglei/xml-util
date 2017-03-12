@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- 服务器IP -->
+	<server>10.24.137.168</server>
+	
+	<port>39514</port>
+	<username>admin</username>
+	<password>Test1234</password>
+	<useSSL>false</useSSL>
+	
+	<accesslist>
+		<access>
+			<resourceCollectionName>ChangeManagement</resourceCollectionName>
+			<resourceName>ChangeTask</resourceName>
+			<fields>
+				<attr name="ticketId" toname="item_ticket_id" type="" />
+				<attr name="title" toname="item_title" type="" />
+				<attr name="description" toname="item_description" type="" />
+				<attr name="status" toname="item_status" type="" />
+			</fields>
+		</access>
+	</accesslist>
+</configuration>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- 服务器IP -->
+	<server>10.24.137.168</server>
+	
+	<port>39514</port>
+	<username>admin</username>
+	<password>Test1234</password>
+	<useSSL>true</useSSL>
+	
+	<accesslist>
+		<access>
+			<resourceCollectionName>ChangeManagement</resourceCollectionName>
+			<resourceName>ChangeTask</resourceName>
+			<fields>
+				<attr name="ticketId" toname="item_ticket_id" type="" />
+				<attr name="title" toname="item_title" type="" />
+				<attr name="description" toname="item_description" type="" />
+				<attr name="status" toname="item_status" type="" />
+				<attr name="duedate" toname="item_duedate" type="date" />
+			</fields>
+		</access>
+	</accesslist>
+	<maps>
+		<map1>
+			<item>
+				<key2>
+					<value>value2</value>
+				</key2>
+			</item>
+			<item>
+				<key1>
+					<value>value1</value>
+				</key1>
+			</item>
+		</map1>
+		<map2>
+			<item>
+				<key1>10</key1>
+			</item>
+			<item>
+				<key2>20</key2>
+			</item>
+		</map2>
+		<map3>
+			<item>
+				<key1 value="10" />
+			</item>
+			<item>
+				<key2 value="20" />
+			</item>
+		</map3>
+		<map4>
+			<item key="key1" value="value1" />
+			<item key="key2" value="value2" />
+		</map4>
+		<map5>
+			<item key="key1">value1</item>
+			<item key="key2">value2</item>
+		</map5>
+		<map6>
+			<key1>value1</key1>
+			<key2>value2</key2>
+		</map6>
+		<map7>
+			<key1 value="value1" />
+			<key2 value="value2" />
+		</map7>
+	</maps>
+</configuration>
