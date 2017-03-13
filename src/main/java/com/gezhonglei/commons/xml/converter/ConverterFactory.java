@@ -63,7 +63,7 @@ public class ConverterFactory {
 	}
 	
 	public static boolean isConvertable(Class<?> clazz) {
-		return converterMap.containsKey(clazz.getName());
+		return clazz.isEnum() || converterMap.containsKey(clazz.getName());
 	}
 	
 	private static Converter charConverter() {
