@@ -56,8 +56,9 @@ public class Parser {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 * @throws ConverterNotFoundException
+	 * @throws BaseException 
 	 */
-	public static <T> T parse(Element element, Class<T> clazz) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
+	public static <T> T parse(Element element, Class<T> clazz) throws  ConverterNotFoundException, BaseException {
 		return parse(element, clazz, null, false);
 	}
 	
@@ -70,8 +71,9 @@ public class Parser {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 * @throws ConverterNotFoundException
+	 * @throws BaseException 
 	 */
-	public static <T> T parse(Element element, Class<T> clazz, String name, boolean ignoreCase) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
+	public static <T> T parse(Element element, Class<T> clazz, String name, boolean ignoreCase) throws ConverterNotFoundException, BaseException {
 		if(clazz == null) return null;
 		if(ConverterUtil.isConvertable(clazz)) {
 			return ConverterUtil.getValue(element.getTextTrim(), clazz);
@@ -84,7 +86,13 @@ public class Parser {
 			return null;
 		}
 		// Class必须有无参构造函数
-		T object = clazz.newInstance();
+		T object = null;
+		try {
+			object = clazz.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			logger.error(e.getMessage(), e);
+			throw new ClassInstanceException(e.getMessage(), e);
+		}
 		Node node = getNode(clazz);
 		parseAttributes(object, node, element, ignoreCase);
 		parseSubTag(object, node, element, ignoreCase);
@@ -114,7 +122,7 @@ public class Parser {
 		}
 	}
 	
-	private static void parseSubTag(Object obj, Node node, Element element, boolean ignoreCase) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
+	private static void parseSubTag(Object obj, Node node, Element element, boolean ignoreCase) throws ConverterNotFoundException, BaseException {
 		Element el = null;
 		Field field = null;
 		Class<?> fieldType = null;
@@ -126,31 +134,29 @@ public class Parser {
 			el = getSubElement(element, tagName, ignoreCase);
 			field = node.getTagField(tagName);
 			fieldType = field.getType();
-			
-			if(ConverterUtil.isConvertable(fieldType)) {
-				valuestr = el.getTextTrim();
-				try {
+
+			try {
+				if(ConverterUtil.isConvertable(fieldType)) {
+					valuestr = el.getTextTrim();
 					fieldValue = ConverterUtil.getValue(valuestr, fieldType);
-				} catch (ConverterNotFoundException e) {
-					logger.error(e.getMessage(), e);
-				} catch (IllegalArgumentException e) {
-					logger.error(e.getMessage(), e);
+				} else if(fieldType.isArray()) {
+					fieldValue = parseArray(el, fieldType, ignoreCase);
+				} else if(List.class.isAssignableFrom(fieldType)) {
+					fieldValue = parseList(el, field, ignoreCase, field.get(obj));
+				} else if(Map.class.isAssignableFrom(fieldType)) {
+					fieldValue = parseMap(el, field, ignoreCase, field.get(obj));
+				} else {
+					fieldValue = parse(el, fieldType, tagName, ignoreCase);
 				}
-					
-			} else if(fieldType.isArray()) {
-				fieldValue = parseArray(el, fieldType, ignoreCase);
-			} else if(List.class.isAssignableFrom(fieldType)) {
-				fieldValue = parseList(el, field, ignoreCase, field.get(obj));
-			} else if(Map.class.isAssignableFrom(fieldType)) {
-				fieldValue = parseMap(el, field, ignoreCase, field.get(obj));
-			} else {
-				fieldValue = parse(el, fieldType, tagName, ignoreCase);
+				field.set(obj, fieldValue);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				logger.error(e.getMessage(), e);
+				throw new FieldReadWriteException(e.getMessage(), e);
 			}
-			field.set(obj, fieldValue);
 		}
 	}
 		
-	private static Object parseArray(Element el, Class<?> fieldType,boolean ignoreCase) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
+	private static Object parseArray(Element el, Class<?> fieldType,boolean ignoreCase) throws ConverterNotFoundException, BaseException {
 		XmlTag fieldTag = fieldType.getAnnotation(XmlTag.class);
 		Class<?> subType = fieldType.getComponentType();					
 		
@@ -180,7 +186,7 @@ public class Parser {
 		return arr.toArray(ReflectUtil.getArray(subType, 0));
 	}
 	
-	private static Object parseList(Element el, Field field, boolean ignoreCase, Object value) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
+	private static Object parseList(Element el, Field field, boolean ignoreCase, Object value) throws ConverterNotFoundException, BaseException {
 		XmlTag fieldTag = field.getAnnotation(XmlTag.class);
 		Class<?> subType = fieldTag != null ? fieldTag.subClass() : null;
 		// 不指定类型参数没有办法解析

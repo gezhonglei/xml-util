@@ -42,8 +42,7 @@ public final class XmlUtil {
 	}
 
 	public static <T> T getEntity(String path, Class<T> clazz)
-			throws DocumentException, InstantiationException,
-			IllegalAccessException, ConverterNotFoundException {
+			throws DocumentException, ConverterNotFoundException, BaseException {
 		SAXReader reader = new SAXReader();
 		Document doc = reader.read(path);
 		Element element = doc.getRootElement();
