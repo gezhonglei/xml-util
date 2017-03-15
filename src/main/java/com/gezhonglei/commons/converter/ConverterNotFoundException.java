@@ -1,4 +1,4 @@
-package com.gezhonglei.commons.xml.converter;
+package com.gezhonglei.commons.converter;
 
 public class ConverterNotFoundException extends Exception {
 

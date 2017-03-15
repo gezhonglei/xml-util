@@ -12,13 +12,14 @@ import org.dom4j.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gezhonglei.commons.converter.ConverterNotFoundException;
+import com.gezhonglei.commons.util.ConverterUtil;
+import com.gezhonglei.commons.util.ReflectUtil;
 import com.gezhonglei.commons.xml.annotation.EmptyClass;
 import com.gezhonglei.commons.xml.annotation.XmlIgnore;
 import com.gezhonglei.commons.xml.annotation.XmlMap;
 import com.gezhonglei.commons.xml.annotation.XmlProp;
 import com.gezhonglei.commons.xml.annotation.XmlTag;
-import com.gezhonglei.commons.xml.converter.ConverterFactory;
-import com.gezhonglei.commons.xml.converter.ConverterNotFoundException;
 
 /**
  * Xml解析类
@@ -72,8 +73,8 @@ public class Parser {
 	 */
 	public static <T> T parse(Element element, Class<T> clazz, String name, boolean ignoreCase) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
 		if(clazz == null) return null;
-		if(ConverterFactory.isConvertable(clazz)) {
-			return ConverterFactory.getValue(element.getTextTrim(), clazz);
+		if(ConverterUtil.isConvertable(clazz)) {
+			return ConverterUtil.getValue(element.getTextTrim(), clazz);
 		}
 		
 		XmlTag tag = clazz.getAnnotation(XmlTag.class);
@@ -102,7 +103,7 @@ public class Parser {
 			valuestr = getAttributeValue(element, prop, ignoreCase, null);
 			if(valuestr != null) {
 				try {
-					Object value = ConverterFactory.getValue(valuestr, field.getType());
+					Object value = ConverterUtil.getValue(valuestr, field.getType());
 					field.set(obj, value);
 				} catch (ConverterNotFoundException e) {
 					logger.error(e.getMessage(), e);
@@ -126,10 +127,10 @@ public class Parser {
 			field = node.getTagField(tagName);
 			fieldType = field.getType();
 			
-			if(ConverterFactory.isConvertable(fieldType)) {
+			if(ConverterUtil.isConvertable(fieldType)) {
 				valuestr = el.getTextTrim();
 				try {
-					fieldValue = ConverterFactory.getValue(valuestr, fieldType);
+					fieldValue = ConverterUtil.getValue(valuestr, fieldType);
 				} catch (ConverterNotFoundException e) {
 					logger.error(e.getMessage(), e);
 				} catch (IllegalArgumentException e) {
@@ -150,8 +151,8 @@ public class Parser {
 	}
 		
 	private static Object parseArray(Element el, Class<?> fieldType,boolean ignoreCase) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
-		Class<?> subType = fieldType.getComponentType();					
 		XmlTag fieldTag = fieldType.getAnnotation(XmlTag.class);
+		Class<?> subType = fieldType.getComponentType();					
 		
 		// subTag: 首选Field上的XmlTag，其次是子元素Class上的XmlTag，最后是ClassName
 		String subTag = fieldTag != null ? fieldTag.subName() : null;
@@ -182,7 +183,8 @@ public class Parser {
 	private static Object parseList(Element el, Field field, boolean ignoreCase, Object value) throws InstantiationException, IllegalAccessException, ConverterNotFoundException {
 		XmlTag fieldTag = field.getAnnotation(XmlTag.class);
 		Class<?> subType = fieldTag != null ? fieldTag.subClass() : null;
-		if(subType == null || subType.equals(EmptyClass.class)) { // 不指定类型参数没有办法解析
+		// 不指定类型参数没有办法解析
+		if(subType == null || subType.equals(EmptyClass.class)) {
 			return null;
 		}
 		
@@ -276,8 +278,8 @@ public class Parser {
 				if(val == null) {
 					continue;
 				}
-				key = ConverterFactory.getValue(key.toString(), keyType);
-				val = ConverterFactory.getValue(val.toString(), valType);
+				key = ConverterUtil.getValue(key.toString(), keyType);
+				val = ConverterUtil.getValue(val.toString(), valType);
 				map.put(key, val);
 			}
 		}

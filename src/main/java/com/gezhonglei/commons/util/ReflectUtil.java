@@ -1,4 +1,4 @@
-package com.gezhonglei.commons.xml;
+package com.gezhonglei.commons.util;
 
 import java.lang.reflect.Array;
 
