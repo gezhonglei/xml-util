@@ -386,8 +386,8 @@ public class Parser {
 		return (!ignoreCase && tagName.equals(name)) || (ignoreCase && tagName.equalsIgnoreCase(name));
 	}
 
-	private static String ifEmpty(String str, String defval) {
-		return !StringUtils.isEmpty(str) ? str : defval;
+	private String ifEmpty(String str, String defval) {
+		return null != str && "".equals(str) ? str : defval;
 	}
 	
 	/**

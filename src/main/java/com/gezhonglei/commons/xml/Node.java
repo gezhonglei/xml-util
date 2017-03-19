@@ -1,7 +1,9 @@
 package com.gezhonglei.commons.xml;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -11,6 +13,8 @@ import com.gezhonglei.commons.xml.annotation.XmlTag;
 
 class Node {
 	
+	private List<String> props = new ArrayList<String>();
+	private List<String> tags = new ArrayList<String>();
 	private Map<String, Field> propFieldMap = new HashMap<String, Field>();
 	private Map<String, Field> tagFieldMap = new HashMap<String, Field>();
 
@@ -21,6 +25,9 @@ class Node {
 	
 	public void addTag(String tagName, Field field) {
 		String name = ifEmpty(tagName, field.getName());
+		if(!tags.contains(name)) {
+			tags.add(name);
+		}
 		tagFieldMap.put(name, field);
 	}
 
@@ -31,6 +38,9 @@ class Node {
 	
 	public void addProp(String propName, Field field) {
 		String name = ifEmpty(propName, field.getName());
+		if(!props.contains(name)) {
+			props.add(name);
+		}
 		propFieldMap.put(name, field);
 	}
 	
@@ -59,10 +69,12 @@ class Node {
 	}
 
 	public String[] getTags() {
-		return tagFieldMap.keySet().toArray(new String[0]);
+		return tags.toArray(new String[0]); 
+		//return tagFieldMap.keySet().toArray(new String[0]);
 	}
 
 	public String[] getProps() {
-		return propFieldMap.keySet().toArray(new String[0]);
+		return props.toArray(new String[0]); 
+		//return propFieldMap.keySet().toArray(new String[0]);
 	}
 }
