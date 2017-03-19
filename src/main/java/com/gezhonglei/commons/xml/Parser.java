@@ -23,6 +23,7 @@ import com.gezhonglei.commons.xml.annotation.XmlTag;
 
 /**
  * Xml解析类
+ * <p>依赖于dom4j实现的解析工具。</p>
  * <p>根据Class类型解析实例，注意事项</p>
  * <p>
  * <ul>
@@ -46,7 +47,9 @@ import com.gezhonglei.commons.xml.annotation.XmlTag;
  */
 public class Parser {
 	
-	private static final Logger logger = LoggerFactory.getLogger(XmlUtil.class); 
+	private static Logger logger = LoggerFactory.getLogger(XmlUtil.class); 
+	
+	private boolean throwWhenError = false;
 	
 	/**
 	 * 从指定xml元素开始解析出指定Class类型的实例对象
@@ -58,7 +61,7 @@ public class Parser {
 	 * @throws ConverterNotFoundException
 	 * @throws BaseException 
 	 */
-	public static <T> T parse(Element element, Class<T> clazz) throws  ConverterNotFoundException, BaseException {
+	public <T> T parse(Element element, Class<T> clazz) throws  ConverterNotFoundException, BaseException {
 		return parse(element, clazz, null, false);
 	}
 	
@@ -68,15 +71,19 @@ public class Parser {
 	 * @param clazz 类型
 	 * @param name xml元素名称
 	 * @return clazz类型的实例对象
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 * @throws ConverterNotFoundException
 	 * @throws BaseException 
 	 */
-	public static <T> T parse(Element element, Class<T> clazz, String name, boolean ignoreCase) throws ConverterNotFoundException, BaseException {
+	public <T> T parse(Element element, Class<T> clazz, String name, boolean ignoreCase) throws BaseException {
 		if(clazz == null) return null;
 		if(ConverterUtil.isConvertable(clazz)) {
-			return ConverterUtil.getValue(element.getTextTrim(), clazz);
+			try {
+				return ConverterUtil.getValue(element.getTextTrim(), clazz);
+			} catch (ConverterNotFoundException e) {
+				logger.error(e.getMessage(), e);
+				if(isThrowWhenError()) {
+					throw new ParseValueException(e.getMessage(), e);
+				}
+			}
 		}
 		
 		XmlTag tag = clazz.getAnnotation(XmlTag.class);
@@ -91,7 +98,9 @@ public class Parser {
 			object = clazz.newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
 			logger.error(e.getMessage(), e);
-			throw new ClassInstanceException(e.getMessage(), e);
+			if(isThrowWhenError()) {
+				throw new ClassInstanceException(e.getMessage(), e);
+			}
 		}
 		Node node = getNode(clazz);
 		parseAttributes(object, node, element, ignoreCase);
@@ -99,7 +108,7 @@ public class Parser {
 		return object;
 	}
 	
-	private static void parseAttributes(Object obj, Node node, Element element, boolean ignoreCase) {
+	private void parseAttributes(Object obj, Node node, Element element, boolean ignoreCase) throws BaseException {
 		String valuestr = null;
 		Field field = null;
 		XmlProp xmlProp = null;
@@ -113,16 +122,22 @@ public class Parser {
 				try {
 					Object value = ConverterUtil.getValue(valuestr, field.getType());
 					field.set(obj, value);
-				} catch (ConverterNotFoundException e) {
-					logger.error(e.getMessage(), e);
 				} catch (IllegalArgumentException | IllegalAccessException e) {
 					logger.error(e.getMessage(), e);
-				} 
+					if(isThrowWhenError()) {
+						throw new FieldReadWriteException(e.getMessage(), e);
+					}
+				} catch (ConverterNotFoundException e) {
+					logger.error(e.getMessage(), e);
+					if(isThrowWhenError()) {
+						throw new ParseValueException(e.getMessage(), e);
+					}
+				}
 			}
 		}
 	}
 	
-	private static void parseSubTag(Object obj, Node node, Element element, boolean ignoreCase) throws ConverterNotFoundException, BaseException {
+	private void parseSubTag(Object obj, Node node, Element element, boolean ignoreCase) throws BaseException {
 		Element el = null;
 		Field field = null;
 		Class<?> fieldType = null;
@@ -132,6 +147,9 @@ public class Parser {
 		for (String tagName : node.getTags()) {
 			// element.element(tagName)
 			el = getSubElement(element, tagName, ignoreCase);
+			if(el == null) {
+				continue;
+			}
 			field = node.getTagField(tagName);
 			fieldType = field.getType();
 
@@ -151,12 +169,19 @@ public class Parser {
 				field.set(obj, fieldValue);
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				logger.error(e.getMessage(), e);
-				throw new FieldReadWriteException(e.getMessage(), e);
+				if(isThrowWhenError()) {
+					throw new FieldReadWriteException(e.getMessage(), e);
+				}
+			} catch (ConverterNotFoundException e) {
+				logger.error(e.getMessage(), e);
+				if(isThrowWhenError()) {
+					throw new ParseValueException(e.getMessage(), e);
+				}
 			}
 		}
 	}
 		
-	private static Object parseArray(Element el, Class<?> fieldType,boolean ignoreCase) throws ConverterNotFoundException, BaseException {
+	private Object parseArray(Element el, Class<?> fieldType,boolean ignoreCase) throws BaseException {
 		XmlTag fieldTag = fieldType.getAnnotation(XmlTag.class);
 		Class<?> subType = fieldType.getComponentType();					
 		
@@ -178,15 +203,22 @@ public class Parser {
 		for (Object item : el.elements()) {
 			subel = (Element)item;
 			if(isEquals(subel.getName(), subTag, ignoreCase)) {
-				if((subValue = parse(subel, subType, null, ignoreCase)) != null) {
-					arr.add(subValue);
+				try {
+					if((subValue = parse(subel, subType, null, ignoreCase)) != null) {
+						arr.add(subValue);
+					}
+				} catch (BaseException e) {
+					logger.error(e.getMessage(), e);
+					if(isThrowWhenError()) {
+						throw new ParseValueException(e.getMessage(), e);
+					}
 				}
 			}
 		}
 		return arr.toArray(ReflectUtil.getArray(subType, 0));
 	}
 	
-	private static Object parseList(Element el, Field field, boolean ignoreCase, Object value) throws ConverterNotFoundException, BaseException {
+	private Object parseList(Element el, Field field, boolean ignoreCase, Object value) throws BaseException {
 		XmlTag fieldTag = field.getAnnotation(XmlTag.class);
 		Class<?> subType = fieldTag != null ? fieldTag.subClass() : null;
 		// 不指定类型参数没有办法解析
@@ -212,8 +244,15 @@ public class Parser {
 		for (Object item : el.elements()) {
 			subel = (Element)item;
 			if(isEquals(subel.getName(), subTag, ignoreCase)) {
-				if((subValue = parse(subel, subType, null, ignoreCase)) != null) {
-					arr.add(subValue);
+				try {
+					if((subValue = parse(subel, subType, null, ignoreCase)) != null) {
+						arr.add(subValue);
+					}
+				} catch (BaseException e) {
+					logger.error(e.getMessage(), e);
+					if(isThrowWhenError()) {
+						throw new ParseValueException(e.getMessage(), e);
+					}
 				}
 			}
 		}
@@ -229,7 +268,7 @@ public class Parser {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private static Object parseMap(Element el, Field field, boolean ignoreCase, Object value) throws ConverterNotFoundException {
+	private Object parseMap(Element el, Field field, boolean ignoreCase, Object value) throws BaseException {
 		String fieldTagName = field.getName();
 		boolean isItemVisible = true, isKeyTag = false, isValueTag = false;
 		String itemTagName = "item", keyName = "key", valueName = "value";	
@@ -284,9 +323,16 @@ public class Parser {
 				if(val == null) {
 					continue;
 				}
-				key = ConverterUtil.getValue(key.toString(), keyType);
-				val = ConverterUtil.getValue(val.toString(), valType);
-				map.put(key, val);
+				try {
+					key = ConverterUtil.getValue(key.toString(), keyType);
+					val = ConverterUtil.getValue(val.toString(), valType);
+					map.put(key, val);
+				} catch (ConverterNotFoundException e) {
+					logger.error(e.getMessage(), e);
+					if(isThrowWhenError()) {
+						throw new ParseValueException(e.getMessage(), e);
+					}
+				}
 			}
 		}
 		if(value != null) {
@@ -374,6 +420,14 @@ public class Parser {
 			}
 		}
 		return defValue;
+	}
+
+	public boolean isThrowWhenError() {
+		return throwWhenError;
+	}
+
+	public void setThrowWhenError(boolean throwWhenError) {
+		this.throwWhenError = throwWhenError;
 	}
 	
 }

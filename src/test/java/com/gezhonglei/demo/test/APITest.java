@@ -1,7 +1,6 @@
 package com.gezhonglei.demo.test;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -9,12 +8,10 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.gezhonglei.commons.xml.ReflectUtil;
+import com.gezhonglei.commons.util.ReflectUtil;
 import com.gezhonglei.commons.xml.XmlUtil;
 import com.gezhonglei.commons.xml.annotation.XmlMap;
-import com.gezhonglei.commons.xml.annotation.XmlTag;
 import com.gezhonglei.demo.entity.MapCollection;
-import com.gezhonglei.demo.entity.RestConfig;
 
 public class APITest {
 	@Test
@@ -95,16 +92,17 @@ public class APITest {
 		
 		List<Object> strArr = new ArrayList<Object>();
 		strArr.add("a");
-		Field strField = TestArray.class.getDeclaredField("strs");
+		// Field strField = TestArray.class.getDeclaredField("strs");
 		//strField.set(testArr, strArr.toArray()); //报错，同下例
 		// String[] strArr2 = (String[]) new Object[] { "aaa", "bbb" }; // 报错
 		
-		Object[] objects = new String[] {"aaa", "bbb", "ccc"};	// 正常
+		//Object[] objects = new String[] {"aaa", "bbb", "ccc"};	// 正常
 		Field objField = TestArray.class.getDeclaredField("objs");
 		objField.set(testArr, new String[] {"aaa", "bbb"});
 		
 		// 总结2：Object[]与String[]之间的转换是不可逆转的
 		Object aa = new ArrayList<String>();
+		@SuppressWarnings("unchecked")
 		List<Object> intList = (List<Object>) aa;
 		intList.add(123);
 		intList.add("123a");
@@ -151,6 +149,7 @@ class TestArray {
 	List<Integer> list;
 }
 
+@SuppressWarnings("serial")
 class TestArray2 extends ArrayList<String> {
 	
 }

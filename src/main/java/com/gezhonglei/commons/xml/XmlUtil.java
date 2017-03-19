@@ -15,8 +15,6 @@ import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 
-import com.gezhonglei.commons.converter.ConverterNotFoundException;
-
 /**
  * Xml工具
  * 
@@ -33,20 +31,23 @@ public final class XmlUtil {
 
 	//private static final Logger logger = LoggerFactory.getLogger(XmlUtil.class);
 
-	public static <T> T unmarshal(String xmlStr, Class<T> clazz) {
-		return null;
+	public static <T> T unmarshal(String xmlStr, Class<T> clazz) throws DocumentException, BaseException {
+		SAXReader reader = new SAXReader();
+		Document doc = reader.read(new StringReader(xmlStr));
+		Element element = doc.getRootElement();
+		return new Parser().parse(element, clazz, null, false);
 	}
 
 	public static String marshal(Object object) {
-		return StringUtils.EMPTY;
+		return new XmlSerializer().serialize(object);
 	}
 
 	public static <T> T getEntity(String path, Class<T> clazz)
-			throws DocumentException, ConverterNotFoundException, BaseException {
+			throws DocumentException, BaseException {
 		SAXReader reader = new SAXReader();
 		Document doc = reader.read(path);
 		Element element = doc.getRootElement();
-		return Parser.parse(element, clazz, null, false);
+		return new Parser().parse(element, clazz, null, false);
 	}
 
 	public static String format(String str) throws DocumentException, IOException {
