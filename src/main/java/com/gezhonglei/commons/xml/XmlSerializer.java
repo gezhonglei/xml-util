@@ -186,7 +186,7 @@ public class XmlSerializer {
 												appendTagEnd(sbStr, entry.getKey() + "");
 											}
 										}
-										if(isValueTag) {
+										if(!isKeyTag && isValueTag) {
 											appendTag(sbStr, valueName, entry.getValue());
 										}
 										appendTagEnd(sbStr, itemTagName);
