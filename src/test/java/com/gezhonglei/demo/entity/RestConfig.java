@@ -10,7 +10,7 @@ public class RestConfig {
 	@XmlTag("server")
 	private String serverName;
 	@XmlTag("port")
-	private String serverPort;
+	private int serverPort;
 	@XmlTag("username")
 	private String userName;
 	@XmlTag("password")
@@ -31,11 +31,11 @@ public class RestConfig {
 		this.serverName = serverName;
 	}
 
-	public String getServerPort() {
+	public int getServerPort() {
 		return serverPort;
 	}
 
-	public void setServerPort(String serverPort) {
+	public void setServerPort(int serverPort) {
 		this.serverPort = serverPort;
 	}
 

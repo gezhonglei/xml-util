@@ -17,10 +17,14 @@ public class UtilTest {
 		RestConfig config = XmlUtil.getEntity(path, RestConfig.class);
 		String json = JsonUtils.toJSONString(config);
 		System.out.println(JsonUtils.format(json, "  "));
-		
+
 		String xmlstr = XmlUtil.marshal(config);
 		System.out.println(xmlstr);
 		System.out.println("----------------");
 		System.out.println(XmlUtil.format(xmlstr));
+	}
+
+	public static void main(String[] args) throws DocumentException, BaseException, IOException {
+		new UtilTest().testPath();
 	}
 }
